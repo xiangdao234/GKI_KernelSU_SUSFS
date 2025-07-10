@@ -51,7 +51,7 @@ on:
         type: boolean
         default: true
       fast:
-        description: '编译加速(实验性):平均加快7分钟'
+        description: '编译加速(无法自定义版本):平均加快7分钟'
         required: false
         type: boolean
         default: false

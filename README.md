@@ -8,7 +8,9 @@
 > 
 > 最近更新：
 > 
-> 1. 恢复NEXT、官方原版、MKSU的susfs1.5.8编译
+> 1. NEXT、官方原版、MKSU的susfs1.5.9 正常编译
+> 2. GKI内核默认算法LZ4——更新至v1.10.0
+> 3. 全KSU均使用手动钩子1.4 (https://github.com/backslashxx/KernelSU/issues/5)
 
 ### Tips
 1. 关于安全补丁
@@ -84,7 +86,7 @@ $ fastboot flash boot <boot.img文件全称>
 > **1. 跨子版本刷机规则**  
 > 当手机GKI主版本为5.10.x时（如5.10.168），可刷写同主版本更高子版本的内核（如5.10.198）。  
 > 关于**X-lts**版本，以 `android12-5.10.X-lts-AnyKernel3.zip` 为例：
-> - **X-lts** 表示长期支持版（子版本号最大，当前示例为5.10.236）
+> - **X-lts** 表示长期支持版（子版本号最大，当前示例为5.10.238）
 > - LTS随着GKI源码更新，编译版本号将持续递增（其他如198的版本，是永久固定的）
 > - ⚠️ 注意：LTS虽为最新，**但**最新版≠最稳定（如6.6.x存在自动重启BUG）
 > 
@@ -98,8 +100,7 @@ $ fastboot flash boot <boot.img文件全称>
 > **3. 编译优化建议**  
 > 修改 [配置文件](.github/workflows/kernel-a12-5.10.yml)（如kernel-a12-5.10.yml）：
 > - ▶️ 删除/注释不需要的GKI版本配置（**加速编译**）
-> - ➕ 添加指定GKI版本（参考[定制指南](https://www.coolapk.com/feed/62820671?shareKey=OGMxYmZmNTk0YzIxNjgxNzM1MzI~&shareUid=11253396&shareFrom=com.coolapk.market_15.2.2)）
-> - 📅 内核构建时间，参照[gki-kernel.yml](.github/workflows/gki-kernel.yml) 文件 **`第500行左右的注释`** 进行修改
+> - 📅 内核构建时间，参照[gki-kernel.yml](.github/workflows/gki-kernel.yml) 文件 **`第552行左右的注释`** 进行修改
 
 ### 更多内容
 可以提及您的意见...我会尝试！

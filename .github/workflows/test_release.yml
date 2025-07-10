@@ -73,17 +73,18 @@ jobs:
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
-  build-kernel-a13-5-10:
-    uses: ./.github/workflows/kernel-a13-5.10.yml
-    secrets: inherit
-    with:
-      make_release: ${{ inputs.make_release }}
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-      version: ${{ inputs.version }}
-      use_zram: ${{ inputs.use_zram }}
-      use_kpm: ${{ inputs.use_kpm }}
+
+  # build-kernel-a13-5-10:
+  #   uses: ./.github/workflows/kernel-a13-5.10.yml
+  #   secrets: inherit
+  #   with:
+  #     make_release: ${{ inputs.make_release }}
+  #     kernelsu_variant: ${{ inputs.kernelsu_variant }}
+  #     kernelsu_branch: ${{ inputs.kernelsu_branch }}
+  #     # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
+  #     version: ${{ inputs.version }}
+  #     use_zram: ${{ inputs.use_zram }}
+  #     use_kpm: ${{ inputs.use_kpm }}
 
   build-kernel-a13-5-15:
     uses: ./.github/workflows/kernel-a13-5.15.yml
@@ -97,17 +98,17 @@ jobs:
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
 
-  build-kernel-a14-5-15:
-    uses: ./.github/workflows/kernel-a14-5.15.yml
-    secrets: inherit
-    with:
-      make_release: ${{ inputs.make_release }}
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-      version: ${{ inputs.version }}
-      use_zram: ${{ inputs.use_zram }}
-      use_kpm: ${{ inputs.use_kpm }}
+  # build-kernel-a14-5-15:
+  #   uses: ./.github/workflows/kernel-a14-5.15.yml
+  #   secrets: inherit
+  #   with:
+  #     make_release: ${{ inputs.make_release }}
+  #     kernelsu_variant: ${{ inputs.kernelsu_variant }}
+  #     kernelsu_branch: ${{ inputs.kernelsu_branch }}
+  #     # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
+  #     version: ${{ inputs.version }}
+  #     use_zram: ${{ inputs.use_zram }}
+  #     use_kpm: ${{ inputs.use_kpm }}
 
   build-kernel-a14-6-1:
     uses: ./.github/workflows/kernel-a14-6.1.yml
@@ -141,9 +142,9 @@ jobs:
     needs:
         - get_manager
         - build-kernel-a12-5-10
-        - build-kernel-a13-5-10
+        # - build-kernel-a13-5-10
         - build-kernel-a13-5-15
-        - build-kernel-a14-5-15
+        # - build-kernel-a14-5-15
         - build-kernel-a14-6-1
         - build-kernel-a15-6-6
     if: ${{ inputs.make_release }}
@@ -153,11 +154,11 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.ZZH_TOKEN }}
       RELEASE_NAME: "GKI内核: ${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }} ${{ inputs.kernelsu_variant }}"
       RELEASE_NOTES: |
-        此发布包含 **${{ inputs.kernelsu_variant == 'Next' && 'KernelSU' || '' }}${{ inputs.kernelsu_variant }},请注意此处的KSU版本** 、SUSFS v1.5.8 、 LZ4KD
+        此发布包含 **${{ inputs.kernelsu_variant == 'Next' && 'KernelSU' || '' }}${{ inputs.kernelsu_variant }},请注意此处的KSU版本** 、SUSFS v1.5.9 ${{ inputs.use_zram && '、LZ4KD' || '' }}
 
         功能:
         -> ${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}-${{ inputs.kernelsu_variant == 'Official' && '原版' || '' }}${{ inputs.kernelsu_branch }}
-        -> SUSFS ඞ v1.5.8
+        -> SUSFS ඞ v1.5.9
         -> 最小作用域手动挂钩 v1.4
         -> Magic Mount 支持
         -> 简单隐藏 LineageOS 检测
@@ -166,6 +167,7 @@ jobs:
         -> BBR 支持
         ${{ inputs.use_kpm && '-> KPM 支持' || '' }}
         -> **LZ4KD&ONEPLUS_LZ4K**  ${{ inputs.use_zram && '支持' || '不支持' }}
+        -> lz4: v1.10.0
         
 
         模块: 
@@ -338,7 +340,7 @@ jobs:
             # Fetch the latest tag from GitHub (this is the latest tag based on the GitHub API)
             LATEST_TAG=$(gh api repos/$REPO_OWNER/$REPO_NAME/tags --jq '.[0].name')
             if [ -z "$LATEST_TAG" ]; then
-              LATEST_TAG="v1.5.5-r0"
+              LATEST_TAG="v1.5.9-r0"
             fi
             
             NEW_TAG=$(echo "$LATEST_TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')
@@ -385,7 +387,7 @@ jobs:
           KSU_VERSION=$((10000 + KSU_GIT_VERSION + VAR))
           echo $KSU_VERSION
           echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
-          echo "RELEASE_NAME=${{ env.RELEASE_NAME }}($KSU_VERSION) & SUSFS v1.5.8" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${{ env.RELEASE_NAME }}($KSU_VERSION) & SUSFS v1.5.9" >> $GITHUB_ENV
       # 如果 make_release 为 true，则创建 GitHub 发布并上传文件
       - name: Create GitHub Release
         uses: actions/create-release@v1
