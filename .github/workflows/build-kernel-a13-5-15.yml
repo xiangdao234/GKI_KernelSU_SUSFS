@@ -25,13 +25,22 @@ on:
           - Stable(标准)
           - Dev(开发)
           - Other(其他/指定)
-        default: Dev(开发)
+        default: Stable(标准)
       version:
         description: '自定义版本名(如5.15.167后面的字符/留空则使用默认版本号)'
         required: false
         type: string
+      build_time:
+        description: '设置内核构建时间(格式见仓库说明)'
+        required: false
+        type: string
       use_zram:
         description: '是否开启增加更多ZRAM算法?'
+        required: true
+        type: boolean
+        default: true
+      use_bbg:
+        description: '是否开启BBG防格机补丁?（报错请关闭）'
         required: true
         type: boolean
         default: true
@@ -40,8 +49,13 @@ on:
         required: true
         type: boolean
         default: true
+      cancel_susfs:
+        description: '取消susfs'
+        required: true
+        type: boolean
+        default: false
       get_manager:
-        description: '是否同时获取最新KSU管理器?（实验性功能，报错请关闭）'
+        description: '获取最新KSU管理器和SUS模块?'
         required: true
         type: boolean
         default: true
@@ -50,19 +64,22 @@ on:
         required: false
         type: boolean
         default: false
+
 jobs:
 
   build-kernel-a13-5-15:
     uses: ./.github/workflows/kernel-a13-5.15.yml
     secrets: inherit
     with:
-      make_release: false
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
+      use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
+      cancel_susfs: ${{ inputs.cancel_susfs }}
       onlyAk3: ${{ inputs.onlyAk3 }}
+      build_time: ${{ inputs.build_time }}
   get-ksu-manager:
     if: ${{ inputs.get_manager }}
     uses: ./.github/workflows/get-manager.yml

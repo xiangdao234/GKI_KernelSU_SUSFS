@@ -7,11 +7,6 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      make_release:
-        description: 'Do you want to create a release?'
-        required: true
-        type: boolean
-        default: true
       kernelsu_variant:
         # description: "选择 KernelSU | 注意:选中MKSU时为标准版"
         description: "选择 KernelSU"
@@ -45,11 +40,21 @@ on:
         required: true
         type: boolean
         default: true
+      use_bbg:
+        description: '是否开启BBG防格机补丁?'
+        required: true
+        type: boolean
+        default: true
       use_kpm:
         description: '是否开启KPM功能?'
         required: true
         type: boolean
         default: true
+      cancel_susfs:
+        description: '取消susfs'
+        required: true
+        type: boolean
+        default: false
       get_manager:
         description: '是否同时获取最新KSU管理器?'
         required: true
@@ -66,13 +71,14 @@ jobs:
     uses: ./.github/workflows/kernel-a12-5.10.yml
     secrets: inherit
     with:
-      make_release: true
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
       # # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      use_bbg: ${{ inputs.use_bbg }}
+      cancel_susfs: ${{ inputs.cancel_susfs }}
 
   # build-kernel-a13-5-10:
   #   uses: ./.github/workflows/kernel-a13-5.10.yml
@@ -90,13 +96,14 @@ jobs:
     uses: ./.github/workflows/kernel-a13-5.15.yml
     secrets: inherit
     with:
-      make_release: ${{ inputs.make_release }}
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
       # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      use_bbg: ${{ inputs.use_bbg }}
+      cancel_susfs: ${{ inputs.cancel_susfs }}
 
   # build-kernel-a14-5-15:
   #   uses: ./.github/workflows/kernel-a14-5.15.yml
@@ -114,25 +121,27 @@ jobs:
     uses: ./.github/workflows/kernel-a14-6.1.yml
     secrets: inherit
     with:
-      make_release: ${{ inputs.make_release }}
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
       # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      use_bbg: ${{ inputs.use_bbg }}
+      cancel_susfs: ${{ inputs.cancel_susfs }}
 
   build-kernel-a15-6-6:
     uses: ./.github/workflows/kernel-a15-6.6.yml
     secrets: inherit
     with:
-      make_release: ${{ inputs.make_release }}
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
       # kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      use_bbg: ${{ inputs.use_bbg }}
+      cancel_susfs: ${{ inputs.cancel_susfs }}
 
   trigger-release:
     runs-on: ubuntu-latest
@@ -147,31 +156,44 @@ jobs:
         # - build-kernel-a14-5-15
         - build-kernel-a14-6-1
         - build-kernel-a15-6-6
-    if: ${{ inputs.make_release }}
     env:
       REPO_OWNER: zzh20188
       REPO_NAME: GKI_KernelSU_SUSFS
-      GITHUB_TOKEN: ${{ secrets.ZZH_TOKEN }}
-      RELEASE_NAME: "GKI内核: ${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }} ${{ inputs.kernelsu_variant }}"
+      SUS_VERSION: ''
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_NAME: "GKI内核: ${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}(${{ needs.get_manager.outputs.ksuVer }})  & SUSFS ${{ needs.get_manager.outputs.susVer }}"
       RELEASE_NOTES: |
-        此发布包含 **${{ inputs.kernelsu_variant == 'Next' && 'KernelSU' || '' }}${{ inputs.kernelsu_variant }},请注意此处的KSU版本** 、SUSFS v1.5.9 ${{ inputs.use_zram && '、LZ4KD' || '' }}
+        此处包含：**${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}**、SUSFS ${{ needs.get_manager.outputs.susVer }} ${{ inputs.use_zram && '、LZ4KD' || '' }}
 
         功能:
-        -> ${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}-${{ inputs.kernelsu_variant == 'Official' && '原版' || '' }}${{ inputs.kernelsu_branch }}
-        -> SUSFS ඞ v1.5.9
-        -> 最小作用域手动挂钩 v1.4
-        -> Magic Mount 支持
-        -> 简单隐藏 LineageOS 检测
-        -> 徒劳隐藏 jit-zygote-cache 检测
-        -> Wireguard 支持
-        -> BBR 支持
-        ${{ inputs.use_kpm && '-> KPM 支持' || '' }}
-        -> **LZ4KD&ONEPLUS_LZ4K**  ${{ inputs.use_zram && '支持' || '不支持' }}
-        -> lz4: v1.10.0
-        
-
+        -> ${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}${{ inputs.kernelsu_variant == 'Official' && '原版' || '' }}${{ inputs.kernelsu_branch == 'Dev(开发)' && format('({0})', needs.get_manager.outputs.ksuVer) || '稳定版' }}
+        -> SUSFS ඞ ${{ needs.get_manager.outputs.susVer }} ${{ inputs.kernelsu_variant != 'SukiSU' && '-> 移除' || '' }}
+        ${{ inputs.kernelsu_variant != 'SukiSU' && '-> KPROBE Hooks' || '-> SUSFS Inline Hooks' }}
+        ${{ inputs.kernelsu_variant != 'Official' && '-> Magic Mount 支持' || '-> OVERLAYFS 支持' }}
+        -> BBG安全补丁 ${{ inputs.use_bbg && '支持' || '不支持' }}
+        ${{ inputs.use_kpm && '-> KPM 支持' || '' }} | 若不支持可[手动修补](https://github.com/zzh20188/GKI_KernelSU_SUSFS/issues/132)
+        -> **LZ4KD&ONEPLUS_LZ4K**  ${{ inputs.use_zram && '开启' || '未开启' }}
+        -> lz4: v1.10.0 ${{ inputs.use_zram && '开启' || '未开启' }}
+        -> [Unicode零宽绕过修复与内存优化](https://t.me/real5ec1cff/268) 请直接使用Xp模块
         模块: 
         -> https://github.com/sidex15/ksu_module_susfs
+        
+      RELEASE_NOTES_ENG: |
+        This version includes: **${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}**, SUSFS ${{ needs.get_manager.outputs.susVer }}${{ inputs.use_zram && ', LZ4KD' || '' }}
+
+        Features:
+        -> ${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}${{ inputs.kernelsu_variant == 'Official' && ' (Official)' || '' }}${{ inputs.kernelsu_branch == 'Dev(开发)' && format('({0})', needs.get_manager.outputs.ksuVer) || ' (Stable)' }}
+        -> SUSFS ඞ ${{ needs.get_manager.outputs.susVer }}
+        ${{ inputs.kernelsu_variant != 'SukiSU' && '-> KPROBE Hooks' || '-> SUSFS Inline Hooks' }}
+        ${{ inputs.kernelsu_variant != 'Official' && '-> Magic Mount Support' || '-> OVERLAYFS Support' }}
+        -> BBG Security Patch: ${{ inputs.use_bbg && 'Supported' || 'Not Supported' }}
+        ${{ inputs.use_kpm && '-> KPM Support' || '' }} | If not supported, [Manual Patching](https://github.com/zzh20188/GKI_KernelSU_SUSFS/issues/132) is available
+        -> **LZ4KD & ONEPLUS_LZ4K**: ${{ inputs.use_zram && 'Enabled' || 'Disabled' }}
+        -> lz4: v1.10.0: ${{ inputs.use_zram && 'Enabled' || 'Disabled' }}
+        -> Unicode Zero-Width Bypass Fix & Memory Optimization: Supported
+        Module: 
+        -> https://github.com/sidex15/ksu_module_susfs
+
         
     steps:
       # Checkout the code
@@ -187,7 +209,7 @@ jobs:
           elif [[ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]]; then
             BRANCH="main"
           elif [[ "${{ inputs.kernelsu_variant }}" == "Next" ]]; then
-            BRANCH="next"
+            BRANCH="dev"
           else
             echo "Error: Custom branch not provided for 'Other(其他/指定)'" >&2
             exit 1
@@ -212,8 +234,8 @@ jobs:
             REPO_URL2="5ec1cff/KernelSU"
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "This is the SukiSU variant"
-            REPO_URL="https://github.com/ShirkNeko/KernelSU.git"
-            REPO_URL2="ShirkNeko/KernelSU"
+            REPO_URL="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"
+            REPO_URL2="SukiSU-Ultra/SukiSU-Ultra"
           else
             echo "Unknown variant"
           fi
@@ -302,7 +324,7 @@ jobs:
             echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
             echo "$RELEASE_NOTES" >> $GITHUB_ENV
             echo "SukiSU 管理器:" >> $GITHUB_ENV
-            echo "-> https://github.com/ShirkNeko/SukiSU-Ultra" >> $GITHUB_ENV
+            echo "-> https://github.com/SukiSU-Ultra/SukiSU-Ultra" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           else
             echo "Unknown variant"
@@ -320,7 +342,7 @@ jobs:
           echo "<summary>提交信息</summary>" >> $GITHUB_ENV
           echo "" >> $GITHUB_ENV
           echo "提交的哈希值与链接(以下提交指的是,本次编译时,KSU或SUSFS所在的进度):" >> $GITHUB_ENV
-          echo "- **KernelSU为${{ inputs.kernelsu_variant }}-${{ inputs.kernelsu_branch }}** (提交): [$KSU_REF]($KSU_URL)" >> $GITHUB_ENV
+          echo "- **KernelSU为${{ inputs.kernelsu_variant == 'Next' && 'KernelSU-' || '' }}${{ inputs.kernelsu_variant }}${{ inputs.kernelsu_branch == 'Dev(开发)' && format('({0})', needs.get_manager.outputs.ksuVer) || '稳定版' }}** (提交): [$KSU_REF]($KSU_URL)" >> $GITHUB_ENV
           echo "- **SUSFS4KSU** (提交):" >> $GITHUB_ENV
           echo "  - gki-android12-5.10: [$COMMIT_HASH_gki_android12_5_10]($COMMIT_URL_gki_android12_5_10)" >> $GITHUB_ENV
           echo "  - gki-android13-5.10: [$COMMIT_HASH_gki_android13_5_10]($COMMIT_URL_gki_android13_5_10)" >> $GITHUB_ENV
@@ -330,20 +352,32 @@ jobs:
           echo "  - gki-android15-6.6: [$COMMIT_HASH_gki_android15_6_6]($COMMIT_URL_gki_android15_6_6)" >> $GITHUB_ENV
           echo "" >> $GITHUB_ENV
           echo "</details>" >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "点击下方 **【Assets】** 展开资源,底部还包含最新 **KSU管理器、CI构建SUSFS模块** " >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           
       # Get the Latest Tag from GitHub
       - name: 生成和创建新标签
         env:
-          GITHUB_TOKEN: ${{ secrets.ZZH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
             # Fetch the latest tag from GitHub (this is the latest tag based on the GitHub API)
-            LATEST_TAG=$(gh api repos/$REPO_OWNER/$REPO_NAME/tags --jq '.[0].name')
-            if [ -z "$LATEST_TAG" ]; then
-              LATEST_TAG="v1.5.9-r0"
+            SUS_VERSION=${{ needs.get_manager.outputs.susVer }}
+            LATEST_TAG=$(gh api repos/$REPO_OWNER/$REPO_NAME/tags --jq '.[0].name'| sed 's/-.*//')
+            echo $SUS_VERSION
+            echo $LATEST_TAG
+
+            # 判断是否相等
+            if [ "$SUS_VERSION" = "$LATEST_TAG" ]; then
+              echo "版本相等"
+              LATEST_TAG=$(gh api repos/$REPO_OWNER/$REPO_NAME/tags --jq '.[0].name')
+            else
+              echo "版本不相等"
+              LATEST_TAG="$SUS_VERSION-r0"
             fi
-            
+
             NEW_TAG=$(echo "$LATEST_TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')
+            
             
             # Output the new tag to be used
             echo "New tag: $NEW_TAG"
@@ -361,33 +395,7 @@ jobs:
         with:
           path: ./downloaded-artifacts
           
-      - name: 设定 KSU 环境变量
-        run: |
 
-          if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
-            echo "This is the Next variant"
-            git clone https://github.com/KernelSU-Next/KernelSU-Next.git KernelSU
-          elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            echo "This is the SukiSU variant"
-            git clone https://github.com/SukiSU-Ultra/SukiSU-Ultra.git KernelSU
-          elif [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
-            echo "This is the Official"
-            git clone https://github.com/tiann/KernelSU.git KernelSU
-          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
-            echo "This is the Official"
-            git clone https://github.com/5ec1cff/KernelSU.git KernelSU    
-          else
-            echo "Unknown variant"
-          fi
-
-          VAR=$([[ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]] && echo 700 || echo 200)
-
-          cd KernelSU
-          KSU_GIT_VERSION=$(git rev-list --count HEAD)
-          KSU_VERSION=$((10000 + KSU_GIT_VERSION + VAR))
-          echo $KSU_VERSION
-          echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
-          echo "RELEASE_NAME=${{ env.RELEASE_NAME }}($KSU_VERSION) & SUSFS v1.5.9" >> $GITHUB_ENV
       # 如果 make_release 为 true，则创建 GitHub 发布并上传文件
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -397,11 +405,12 @@ jobs:
           release_name: ${{ env.RELEASE_NAME }} # Pass the RELEASE_NAME to the action
           body: ${{ env.RELEASE_NOTES }}  # Pass the RELEASE_NOTES to the action
 
-      - name: 上传KSU管理器
+      - name: 上传KSU管理器 & SUS模块
         continue-on-error: true
         run: |
             echo "Uploading KSU管理器"
             gh release upload ${{ env.NEW_TAG }} "./downloaded-artifacts/*Manager*/*"
+            gh release upload ${{ env.NEW_TAG }} "./downloaded-artifacts/susfs-*/*"
 
       - name: 动态上传发布资产
         run: |

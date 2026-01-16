@@ -6,10 +6,6 @@ permissions:
 on:
   workflow_call:  # This allows this workflow to be called from another workflow
     inputs:
-      make_release:
-        required: true
-        type: boolean
-        default: true
       kernelsu_variant:
         required: true
         type: string
@@ -27,16 +23,30 @@ on:
         required: true
         type: boolean
         default: true
+      use_bbg:
+        description: '是否开启BBG防格机补丁?'
+        required: true
+        type: boolean
+        default: true
       use_kpm:
         description: '是否开启KPM功能?'
         required: true
         type: boolean
         default: true
+      cancel_susfs:
+        description: '取消susfs'
+        required: false
+        type: boolean
+        default: false
       onlyAk3:
         description: '仅上传AK3压缩包?(无boot,下载更快)'
         required: false
         type: boolean
         default: false
+      build_time:
+        description: '设置内核构建时间(格式见仓库说明)'
+        required: false
+        type: string
   
 jobs:
   build-kernel-a13-5-15-kernelsu-susfs:
@@ -70,7 +80,6 @@ jobs:
     uses: ./.github/workflows/gki-kernel.yml
     secrets: inherit
     with:
-      make_release: ${{ inputs.make_release || false }}
       android_version: "android13"
       kernel_version: "5.15"
       sub_level: ${{ matrix.sub_level }}
@@ -79,7 +88,9 @@ jobs:
       kernelsu_branch: ${{ inputs.kernelsu_branch || 'Dev' }}
       version: ${{ inputs.version || '' }}
       use_zram: ${{ inputs.use_zram }}
+      use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
       supp_op: ${{ inputs.supp_op || false }}
-      fast: ${{ inputs.fast || false }}
       onlyAk3: ${{ inputs.onlyAk3 || false }}
+      build_time: ${{ inputs.build_time || '' }}
+      cancel_susfs: ${{ inputs.cancel_susfs || false }}

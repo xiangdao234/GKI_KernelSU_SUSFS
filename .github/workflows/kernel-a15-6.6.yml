@@ -6,10 +6,6 @@ permissions:
 on:
   workflow_call:  # This allows this workflow to be called from another workflow
     inputs:
-      make_release:
-        required: true
-        type: boolean
-        default: true
       kernelsu_variant:
         required: true
         type: string
@@ -27,18 +23,23 @@ on:
         required: true
         type: boolean
         default: true
+      use_bbg:
+        description: '是否开启BBG防格机补丁?'
+        required: true
+        type: boolean
+        default: true
       use_kpm:
         description: '是否开启KPM功能?'
-        required: false
+        required: true
         type: boolean
-        default: false
-      fast:
-        description: '编译加速(实验性):平均加快7分钟'
+        default: true
+      cancel_susfs:
+        description: '取消susfs'
         required: false
         type: boolean
         default: false
       supp_op:
-        description: '是否开启一加8E处理器机型支持?(非该机型无须勾)'
+        description: '是否开启一加8E处理器机型支持?'
         required: false
         type: boolean
         default: false
@@ -47,7 +48,10 @@ on:
         required: false
         type: boolean
         default: false
-
+      build_time:
+        description: '设置内核构建时间(格式见仓库说明)'
+        required: false
+        type: string
 
 jobs:
   build-kernel-a15-6-6-kernelsu-susfs:
@@ -71,12 +75,15 @@ jobs:
             os_patch_level: "2025-02"
           - sub_level: "77"
             os_patch_level: "2025-03"
+          - sub_level: "89"
+            os_patch_level: "2025-06"
+          - sub_level: "98"
+            os_patch_level: "2025-09"
           - sub_level: "X"
             os_patch_level: "lts"
     uses: ./.github/workflows/gki-kernel.yml
     secrets: inherit
     with:
-      make_release: ${{ inputs.make_release || false }}
       android_version: "android15"
       kernel_version: "6.6"
       sub_level: ${{ matrix.sub_level }}
@@ -85,7 +92,9 @@ jobs:
       kernelsu_branch: ${{ inputs.kernelsu_branch || 'Dev' }}
       version: ${{ inputs.version || '' }}
       use_zram: ${{ inputs.use_zram }}
+      use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
-      supp_op: ${{ inputs.supp_op }}
-      fast: ${{ inputs.fast }}
+      supp_op: ${{ inputs.supp_op || false }}
       onlyAk3: ${{ inputs.onlyAk3 || false }}
+      build_time: ${{ inputs.build_time || '' }}
+      cancel_susfs: ${{ inputs.cancel_susfs || false }}
